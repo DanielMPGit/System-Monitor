@@ -17,20 +17,10 @@ MEMORYSTATUSEX getMemoryStatus() {
 double getDouble(FILETIME time){
     return (double)((unsigned long long)time.dwHighDateTime << 32 | time.dwLowDateTime);
 }
-
-Element listDrives(){
-    DWORD drives = GetLogicalDrives();
-    Elements drive_element;
-    
-    for (int i = 0; i < 26; ++i) {
-        if (drives & (1 << i)) {
-            std::string letra = std::string(1, (char)('A' + i)) + ":\\";
-            drive_element.push_back(hbox({ text("Disk: " + letra) }));
-
-        }
-    }
-    
-    return vbox(drive_element);
+std::tuple<ULARGE_INTEGER, ULARGE_INTEGER, ULARGE_INTEGER> getDiskInfo(LPCSTR path){
+    ULARGE_INTEGER freeBytesAvailable, totalBytes, totalFreeBytes;
+    GetDiskFreeSpaceExA(path, &freeBytesAvailable, &totalBytes, &totalFreeBytes);
+    return std::make_tuple(freeBytesAvailable, totalBytes, totalFreeBytes);
 }
 
 std::tuple<FILETIME,FILETIME,FILETIME,FILETIME,FILETIME,FILETIME> getFileTimes(){
@@ -78,6 +68,26 @@ std::string getMemoryKB(double data){
     std::stringstream stream;
     stream << std::fixed << std::setprecision(2) << (data / 1024.0);
     return stream.str();
+}
+Element listDrives(){
+    DWORD drives = GetLogicalDrives();
+    Elements drive_element;
+    
+    for (int i = 0; i < 26; ++i) {
+        if (drives & (1 << i)) {
+            std::string letra = std::string(1, (char)('A' + i)) + ":\\";
+            std::wstring wletra(letra.begin(), letra.end());
+            auto [free, total, totalFree] = getDiskInfo(letra.c_str());
+            drive_element.push_back(hbox({ 
+                text("Disk: " + letra) | size(WIDTH, EQUAL, 12), separator(),
+                text("Free for User: " + getMemoryGB(free.QuadPart)+" GB") | size(WIDTH, EQUAL, 25), separator(),
+                text("Total: " + getMemoryGB(total.QuadPart)+" GB") | size(WIDTH, EQUAL, 20), separator(),
+                text("Free Total: " + getMemoryGB(totalFree.QuadPart)+" GB") | size(WIDTH, EQUAL, 20),
+            }));
+        }
+    }
+    
+    return vbox(drive_element);
 }
 
 int main() {
