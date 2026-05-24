@@ -123,7 +123,7 @@ Element temperatures() {
         std::ifstream temp_f(hwmon.path() / "temp1_input");
         int m;
         if (temp_f >> m){
-            rows.push_back(hbox({ text(name) | flex, text(std::to_string(m / 1000) + "C") }));
+            rows.push_back(hbox({ text(name) | flex, text(std::to_string(m / 1000) + "ºC") }));
         }
     }
     return vbox({ text("Temperatures") | bold, separator(), vbox(rows) });
